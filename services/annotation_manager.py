@@ -9,7 +9,7 @@ from pathlib import Path
 from datetime import datetime
 import uuid
 import threading
-
+import time
 
 class AnnotationManager:
     """标注数据管理器"""
@@ -23,6 +23,18 @@ class AnnotationManager:
         self.projects = {}
         self._lock = threading.Lock()
         self._load_all_projects()
+
+        self.thread = threading.Thread(target=self.autosave_loop, daemon=True)
+        self.thread.start()
+
+    def autosave_loop(self):
+        while True:
+            print("[AUTOSAVE] SAVING")
+            self._save_all_projects()
+            for proj_key in self.projects.keys():
+                self._save_project_annotations(proj_key)
+
+            time.sleep(60)
 
     def _load_all_projects(self):
         """加载所有项目"""
@@ -171,8 +183,8 @@ class AnnotationManager:
             image['annotated'] = len(annotations) > 0
 
             project['updated_at'] = datetime.now().isoformat()
-            self._save_all_projects()
-            self._save_project_annotations(project_id)
+            #self._save_all_projects()
+            #self._save_project_annotations(project_id)
 
     def get_annotations(self, project_id: str, image_index: int) -> list:
         """获取标注"""
